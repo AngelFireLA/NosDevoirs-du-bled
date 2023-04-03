@@ -11,7 +11,7 @@
     <div class="card">
         <div class="card-header">{{ hw.title }}</div>
         <div class="card-body"><p>Posted by {{ hw.user_id }}</p>
-            <p>Class: {{ hw.class_id }} | Subject: {{ hw.subject }} | Teacher: {{ hw.teacher }} | Due Date: {{
+            <p>Classe: {{ hw.class_id }} | Matière: {{ hw.subject }} | Professeur: {{ hw.teacher }} | Date Limite: {{
                 hw.due_date }}</p></div>
         <div class="card-footer">
             <form method="POST" action="{{ url_for('upvote_homework', homework_id=hw.id) }}"> {{ form.csrf_token }} {{

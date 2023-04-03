@@ -9,32 +9,39 @@
 <body>
 <div class="container">
     <h1>Upload Homework</h1>
-    <form method="post">
-        <div class="form-group">
-            <label for="title">Homework Title:</label>
-            <input class="form-control" id="title" name="title" placeholder="Enter homework title" type="text">
-        </div>
-        <div class="form-group">
-            <label for="content">Content:</label>
-            <textarea class="form-control" id="content" maxlength="2000" name="content" placeholder="Enter content of the homework" rows="5"></textarea>
-        </div>
-        <div class="form-group">
-            <label for="due_date">Due Date:</label>
-            <input class="form-control" id="due_date" name="due_date" type="date">
-        </div>
-        <div class="form-group">
-            <label for="teacher">Teacher:</label>
-            <input class="form-control" id="teacher" name="teacher" placeholder="Enter teacher's name" type="text">
-        </div>
-        <div class="form-group">
-            <label for="subject">Subject:</label>
-            <input class="form-control" id="subject" name="subject" placeholder="Enter subject" type="text">
-        </div>
-        <div class="form-group">
-            <label for="class">Class:</label>
-            <input class="form-control" id="class" name="class" placeholder="Enter class name (e.g. 10A)" type="text">
-        </div>
-        <button class="btn btn-primary" type="submit">Submit</button>
+    <form method="post" enctype="multipart/form-data"> {{ form.csrf_token }}
+            <div class="form-group">
+        <label for="{{ form.title.id }}">{{ form.title.label }}</label>
+        {{ form.title(class="form-control", placeholder="Titre") }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.content.id }}">{{ form.content.label }}</label>
+        {{ form.content(class="form-control") }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.file.id }}">{{ form.file.label }}</label>
+        {{ form.file(class="form-control") }}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.due_date.id }}">{{ form.due_date.label }}</label>
+        {{ form.due_date(class="form-control", placeholder="Date Limite") }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.teacher.id }}">{{ form.teacher.label }}</label>
+        {{ form.teacher(class="form-control") }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.subject.id }}">{{ form.subject.label }}</label>
+        {{ form.subject(class="form-control") }}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.classe.id }}">{{ form.classe.label }}</label>
+        {{ form.classe(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.submit(class="btn btn-primary") }}
+    </div>
     </form>
     <div id="message"></div> <!-- Placeholder for displaying upload message -->
 </div>
