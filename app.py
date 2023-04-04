@@ -1,6 +1,6 @@
 from flask_migrate import Migrate
 from werkzeug.utils import secure_filename
-
+import os
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -79,19 +79,30 @@ def upload():
         subject = request.form['subject']
         class_id = request.form['classe']
         file = request.files.get('file')
-        print(file)
+        # Check if file exists and is less than or equal to 1 MB
+        if not file or len(file.read()) > 1024 * 1024:
+            flash('File must be less than or equal to 1 MB.', 'error')
+            return redirect(url_for('upload_error'))
+        # Check if file type is allowed
+        allowed_extensions = ['txt', 'odt', 'docx']
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        if file_ext not in allowed_extensions:
+            flash('File type not allowed.', 'error')
+            return redirect(url_for('upload_error'))
         filename = secure_filename(file.filename)
         file_data = file.read()
 
         # check if there is already a homework with the same title
         existing_homework = Homework.query.filter_by(title=title).first()
         if existing_homework:
+            flash('A homework with the same title already exists.', 'error')
             return redirect(url_for('upload_error'))
 
         homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
                             subject=subject, class_id=class_id, file_data=file_data)
         db.session.add(homework)
         db.session.commit()
+        flash('Homework uploaded successfully.', 'success')
         return redirect(url_for('homework'))
     else:
         return render_template('upload.html', form=form)

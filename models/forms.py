@@ -28,13 +28,6 @@ class UpdateProfileForm(FlaskForm):
 class UpvoteForm(FlaskForm):
     submit = SubmitField()
 
-def FileSizeLimit(max_size_in_mb):
-    max_bytes = max_size_in_mb*1024*1024
-    def file_length_check(form, field):
-        if len(field.data.read()) > max_bytes:
-            raise ValidationError(f"File size must be less than {max_size_in_mb}MB")
-        field.data.seek(0)
-    return file_length_check
 
 class UploadForm(FlaskForm):
     classes = ["1 G-B"]
@@ -44,6 +37,7 @@ class UploadForm(FlaskForm):
     content = StringField('Contenu', validators=[DataRequired()])
     file = FileField('file', validators=[
         FileAllowed(['txt'], 'Text files only!'),
+        FileSize(max_size=1 * 1024 * 1024, message='File too large! Maximum allowed size is 1MB.')
     ])
 
     due_date = DateField('Date Limite', format='%d-%m-%Y')
