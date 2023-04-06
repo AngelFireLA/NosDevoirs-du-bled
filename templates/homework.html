@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homework</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body> <!-- Homework list -->
+<div id="homework-list"> {% for hw in homework_list %}
+    <div class="card">
+        <div class="card-header">{{ hw.title }}</div>
+        <div class="card-body"><p>Posted by {{ hw.user_id }}</p>
+            <p>Classe: {{ hw.class_id }} | Matière: {{ hw.subject }} | Professeur: {{ hw.teacher }} | Date Limite: {{
+                hw.due_date }}</p></div>
+        <div class="card-footer">
+            <form method="POST" action="{{ url_for('upvote_homework', homework_id=hw.id) }}"> {{ form.csrf_token }} {{
+                form.submit(class="btn btn-primary", value="+1") }}
+            </form>
+            <span>Upvotes: {{ hw.upvotes }}</span></div>
+    </div>
+    {% endfor %}
+</div>
+</body>
+</html>
