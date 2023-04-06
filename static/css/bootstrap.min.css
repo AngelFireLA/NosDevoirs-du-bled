@@ -34,6 +34,14 @@
     border-bottom-right-radius: 20px;
 }
 
+.my-card p {
+  color: black;
+}
+
+.my-card p:hover {
+    color: #007bff; /* Set link color to blue */
+}
+
 .homework-card .card-footer {
     background-color: white; /* Set footer background to white */
     border-top: none;
@@ -65,6 +73,74 @@ body {
     float: left;
     text-align: left;
 }
+
+
+.answer-card {
+    margin-bottom: 20px;
+    border-radius: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: hidden;
+    border: 2px solid #79ec6f; /* Add green border */
+}
+
+.answer-card .card-header {
+    background-color: white; /* Set header background to white */
+    border-bottom: 2px solid #79ec6f;
+    font-weight: bold;
+    padding: 10px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+}
+
+.answer-card .card-header p {
+  margin-bottom: 0;
+}
+
+.answer-card .card-body {
+    font-size: 18px;
+    line-height: 1.5;
+    padding: 10px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+.my-card p {
+    color: black;
+}
+
+.my-card p:hover {
+    color: #79ec6f; /* Set link color to green */
+}
+
+.answer-card .card-footer {
+    background-color: white; /* Set footer background to white */
+    border-top: none;
+    text-align: right;
+    padding: 10px;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+.answer-card .card-footer p {
+    margin-bottom: 0; /* Remove the default bottom margin of the <p> tag */
+}
+
+.answer-card .card-footer a {
+    color: #79ec6f; /* Set link color to green */
+}
+
+.answer-card .card-footer a:hover {
+    text-decoration: none;
+}
+
+/* Set the background color of the page to a light blue */
+body {
+    background-color: #f0f8ff;
+}
+
 
 
 /*# sourceMappingURL=bootstrap.min.css.map */

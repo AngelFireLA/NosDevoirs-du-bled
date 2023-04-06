@@ -9,14 +9,15 @@
 <body>
     <div id="homework-list">
         {% for hw in homework_list %}
-        <div class="homework-card card">
+        <a href="{{ url_for('homework', homework_id=hw.id) }}" style="text-decoration: none;">
+        <div class="homework-card card my-card">
             <div class="card-header">
                 <div class="row justify-content-between align-items-center">
                     <div class="col-auto">
-                        <h3>{{ hw.title }}</h3>
+                        <p style="font-size: 22px;">{{ hw.title }}</p>
                     </div>
                     <div class="col-auto">
-                        <p style="font-size: 24px;">{{ hw.due_date }}</p>
+                        <p style="font-size: 22px;">{{ hw.due_date }}</p>
                     </div>
                 </div>
             </div>
@@ -46,6 +47,7 @@
             </div>
         </div>
         {% endfor %}
+        </a>
     </div>
 </body>
 

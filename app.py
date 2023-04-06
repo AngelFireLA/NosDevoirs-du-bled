@@ -19,7 +19,7 @@ app.config.from_object(Config)
 db = SQLAlchemy(app)
 login = LoginManager(app)
 login.login_view = "login"
-migrate = Migrate(app, db, render_as_batch=True)
+migrate = Migrate(app, db)
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -50,6 +50,8 @@ class Homework(db.Model):
 
 class Answer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    #homework_id is the id of the homework it answers
+    homework_id = db.Column(db.Integer)
     title = db.Column(db.String(200), index=True, unique=True)
     content = db.Column(db.String(2000))
     user_id = db.Column(db.String(200))
@@ -61,10 +63,20 @@ with app.app_context():
     db.create_all()
 
 
-@app.route('/homework', methods=['GET', 'POST'])
-def homework():
-    homework_list = Homework.query.all()
-    return render_template('homeworks.html', homework_list=homework_list)
+@app.route('/homeworks/', defaults={'homework_id': None}, methods=['GET'])
+@app.route('/homeworks/<int:homework_id>', methods=['GET'])
+def homework(homework_id):
+    if homework_id:
+        homework = Homework.query.get(homework_id)
+        answers = Answer.query.filter_by(homework_id=homework_id).all()
+        if homework:
+            return render_template('homework_answers.html', homework=homework, answers=answers)
+        else:
+            flash('Homework not found.')
+            return redirect(url_for('homeworks'))
+    else:
+        homework_list = Homework.query.all()
+        return render_template('homeworks.html', homework_list=homework_list)
 
 def change_user_status(email, status):
     user = User.query.filter_by(email=email).first()
@@ -78,12 +90,12 @@ def change_user_status(email, status):
 
 
 
-@app.route('/upload_homework', methods=['GET', 'POST'])
+@app.route('/envoyer_devoir', methods=['GET', 'POST'])
 @login_required
 def upload():
     if not current_user.status == "admin":
         abort(403)
-    form = UploadForm()
+    form = UploadHomeworkForm()
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
@@ -91,12 +103,49 @@ def upload():
         teacher = request.form['teacher']
         subject = request.form['subject']
         class_id = request.form['classe']
+
+        # check if there is already a homework with the same title
+        existing_homework = Homework.query.filter_by(title=title).first()
+        if existing_homework:
+            session.pop('_flashes', None)
+            flash('Un devoir avec le même titre existe déja', 'error')
+            return redirect(url_for('upload_error'))
+        if not current_user:
+            homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
+                            subject=subject, class_id=class_id)
+        else:
+            homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
+                                subject=subject, class_id=class_id, user_id=current_user.username)
+            current_user.username
+        db.session.add(homework)
+        db.session.commit()
+        session.pop('_flashes', None)
+        flash('Devoir envoyé correctement.', 'success')
+        return redirect(url_for('homework'))
+    else:
+        return render_template('upload_hw.html', form=form)
+
+
+@app.route('/envoyer_reponse/<int:homework_id>', methods=['GET', 'POST'])
+@login_required
+def upload_answer(homework_id):
+    homework = Homework.query.filter_by(id=homework_id).first()
+    if not homework:
+        flash("L'identifiant de devoir est invalide, veuillez ne pas toucher à l'identifiant de l'url la prochaine fois.")
+        return redirect(url_for('home'))
+    if not current_user.status == "admin":
+        abort(403)
+    form = UploadAnswerForm()
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        due_date = homework.due_date
         file = request.files.get('file')
-        if 'file' in request.files and request.files['file'].filename:
+        if file:
             filename = secure_filename(file.filename)
             file_data = file.read()
             # Check if file exists and is less than or equal to 1 MB
-            if len(file_data) > 1024 * 1024*5:
+            if len(file_data) > 1024 * 1024 * 5:
                 session.pop('_flashes', None)
                 flash('Le fichier ne doit pas faire plus de 5 mo.', 'error')
                 return redirect(url_for('upload_error'))
@@ -111,27 +160,26 @@ def upload():
             filename = None
             file_data = None
 
-        # check if there is already a homework with the same title
-        existing_homework = Homework.query.filter_by(title=title).first()
-        if existing_homework:
+        # check if there is already an answer with the same title for this homework
+        existing_answer = Answer.query.filter_by(homework_id=homework_id, title=title).first()
+        if existing_answer:
             session.pop('_flashes', None)
-            flash('Un devoir avec le même titre existe déja', 'error')
+            flash('Une réponse avec le même titre existe déjà pour ce devoir', 'error')
             return redirect(url_for('upload_error'))
-        if not current_user:
-            homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
-                            subject=subject, class_id=class_id, file_data=file_data, file_name=filename)
-        else:
-            homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
-                                subject=subject, class_id=class_id, file_data=file_data, file_name=filename, user_id=current_user.username)
-            current_user.username
-        db.session.add(homework)
-        db.session.commit()
-        session.pop('_flashes', None)
-        flash('Devoir envoyé correctement.', 'success')
-        return redirect(url_for('homework'))
-    else:
-        return render_template('upload_hw.html', form=form)
 
+        # create a new answer object
+        answer = Answer(homework_id=homework_id, title=title, content=content, user_id=current_user.username,
+                        due_date=due_date,
+                        file_data=file_data, file_name=filename)
+        db.session.add(answer)
+        db.session.commit()
+
+        session.pop('_flashes', None)
+        flash('Réponse envoyée avec succès', 'success')
+        return redirect(url_for('homework'))
+
+    else:
+        return render_template('upload_answer.html', form=form)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -170,6 +218,7 @@ def login():
 @login_required
 def profile():
     form = UpdateProfileForm()
+    session.pop('_flashes', None)
     if form.validate_on_submit():
         if current_user.check_password(form.password.data):
             user = User.query.filter_by(id=current_user.id).first()
@@ -197,20 +246,19 @@ def logout():
 @app.route('/upload_error')
 def upload_error():
     return render_template('upload_error.html')
+
 @app.route('/')
 @app.route('/home')
 def home():
     return render_template('index.html')
 
 
-
-
-@app.route('/download_file/<int:homework_id>')
-def download_file(homework_id):
-    homework = Homework.query.filter_by(id=homework_id).first()
-    file_data = homework.file_data
+@app.route('/download_file/<int:answer_id>')
+def download_file(answer_id):
+    answer = Answer.query.filter_by(id=answer_id).first()
+    file_data = answer.file_data
     response = make_response(file_data)
-    response.headers['Content-Disposition'] = 'attachment; filename={}'.format(homework.file_name)
+    response.headers['Content-Disposition'] = 'attachment; filename={}'.format(answer.file_name)
     return response
 
 class RegistrationForm(FlaskForm):
@@ -233,7 +281,7 @@ class UpdateProfileForm(FlaskForm):
     password = PasswordField('Entrer le mot de passe pour confirmer les changements.', validators=[DataRequired()])
     submit = SubmitField('Sauvegarder les changements.')
 
-class UploadForm(FlaskForm):
+class UploadHomeworkForm(FlaskForm):
     classes = ["1 G-B"]
     matieres = ["Français", "Histoire Géographie", "Espagnol", "Anglais", "Sport", "ES Physique", "ES Maths", "ES Svt"]
     profs = ["MARCHINI", "MALPELLI", "CABARCOS", "MUSSI", "RIGAUX", "BRUNINI", "AVENOSO", "CASTELLO", "CHAPUIS", "MURACCIOLES", "ROMEO"]
@@ -245,11 +293,17 @@ class UploadForm(FlaskForm):
     classe = SelectField('Classe', choices=classes)
     submit = SubmitField('Envoyer')
 
-class AnswerForm(FlaskForm):
+
+class UploadAnswerForm(FlaskForm):
     title = StringField('Titre', validators=[DataRequired()])
     content = StringField('Contenu', validators=[DataRequired()])
     file = FileField('file', validators=[])
     submit = SubmitField('Envoyer')
 
 if __name__ == "__main__":
-    app.run(host='127.0.0.1', port=3000)
+    start = input("Waiting for command : ")
+    if start == "start":
+        app.run()
+    else:
+        with app.app_context():
+            exec('change_user_status("lysandre@mail.com", "admin")')

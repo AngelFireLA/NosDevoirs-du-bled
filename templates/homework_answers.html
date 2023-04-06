@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homework</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <style>
+        body {
+            background-color: #e2fbdf;
+        }
+    </style>
+</head>
+<body>
+<style>#c0f6bb</style>
+    <div id="homework-answer-list">
+        <h1>Réponses pour "{{ homework.title }}"</h1>
+        {% for ans in answers %}
+        <div class="answer-card card my-card">
+            <div class="card-header">
+                <div class="row justify-content-between align-items-center">
+                    <div class="col-auto">
+                        <p style="font-size: 22px;">{{ ans.title }}</p>
+                    </div>
+                    <div class="col-auto">
+                        <p style="font-size: 22px;">{{ ans.due_date }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-header">
+                <div class="row justify-content-between align-items-center">
+                    <div class="col-auto">
+                        <p style="font-size: 18px; font-weight: normal;">{{ ans.content }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="row justify-content-between align-items-center">
+                    <div class="col-auto">
+                        <p style="text-align: left;">{{ ans.user_id }}</p>
+                    </div>
+                    {% if ans.file_data %}
+                    <div class="col-auto">
+                        <a href="{{ url_for('download_file', answer_id=ans.id) }}" class="btn btn-primary" style="background-color: #007bff; color: white;">Download File</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
