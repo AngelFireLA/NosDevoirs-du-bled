@@ -1,3 +1,5 @@
+import io
+
 from flask_migrate import Migrate
 from werkzeug.utils import secure_filename
 import os
@@ -8,7 +10,8 @@ from models import forms
 from flask_login import current_user, login_user, logout_user, login_required
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, flash, get_flashed_messages, redirect, render_template, request, url_for
+from flask import Flask, flash, get_flashed_messages, redirect, render_template, request, url_for, make_response, session, \
+    send_file
 
 from models.forms import UploadForm
 
@@ -28,9 +31,9 @@ class Homework(db.Model):
     teacher = db.Column(db.String(100))
     subject = db.Column(db.String(100))
     class_id = db.Column(db.String(100))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.String(200), nullable=True)
     file_data = db.Column(db.LargeBinary, nullable=True)
-    upvotes = db.Column(db.Integer, default=0)
+    file_name = db.Column(db.String(100), nullable=True)
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -55,17 +58,8 @@ with app.app_context():
 @app.route('/homework', methods=['GET', 'POST'])
 def homework():
     homework_list = Homework.query.all()
-    print(homework_list)
-    form = forms.UpvoteForm()
-    return render_template('homework.html', homework_list=homework_list, form=form)
+    return render_template('homeworks.html', homework_list=homework_list)
 
-@app.route('/upvote_homework/<int:homework_id>', methods=['POST'])
-@login_required
-def upvote_homework(homework_id):
-    homework = Homework.query.get(homework_id)
-    homework.upvotes += 1
-    db.session.commit()
-    return redirect(url_for('homework'))
 
 
 @app.route('/upload', methods=['GET', 'POST'])
@@ -79,33 +73,46 @@ def upload():
         subject = request.form['subject']
         class_id = request.form['classe']
         file = request.files.get('file')
-        # Check if file exists and is less than or equal to 1 MB
-        if not file or len(file.read()) > 1024 * 1024:
-            flash('File must be less than or equal to 1 MB.', 'error')
-            return redirect(url_for('upload_error'))
-        # Check if file type is allowed
-        allowed_extensions = ['txt', 'odt', 'docx']
-        file_ext = os.path.splitext(file.filename)[1].lower()
-        if file_ext not in allowed_extensions:
-            flash('File type not allowed.', 'error')
-            return redirect(url_for('upload_error'))
-        filename = secure_filename(file.filename)
-        file_data = file.read()
+        if 'file' in request.files and request.files['file'].filename:
+            filename = secure_filename(file.filename)
+            file_data = file.read()
+            # Check if file exists and is less than or equal to 1 MB
+            if len(file_data) > 1024 * 1024*5:
+                session.pop('_flashes', None)
+                flash('Le fichier ne doit pas faire plus de 5 mo.', 'error')
+                return redirect(url_for('upload_error'))
+            # Check if file type is allowed
+            allowed_extensions = ['txt', 'odt', 'docx', '.txt', '.odt', '.docx']
+            file_ext = os.path.splitext(file.filename)[1].lower()
+            if file_ext not in allowed_extensions:
+                session.pop('_flashes', None)
+                flash('Type de fichier non autorisé: txt, odt, docx', 'error')
+                return redirect(url_for('upload_error'))
+        else:
+            filename = None
+            file_data = None
 
         # check if there is already a homework with the same title
         existing_homework = Homework.query.filter_by(title=title).first()
         if existing_homework:
-            flash('A homework with the same title already exists.', 'error')
+            session.pop('_flashes', None)
+            flash('Un devoir avec le même titre existe déja', 'error')
             return redirect(url_for('upload_error'))
-
-        homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
-                            subject=subject, class_id=class_id, file_data=file_data)
+        if not current_user:
+            homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
+                            subject=subject, class_id=class_id, file_data=file_data, file_name=filename)
+        else:
+            homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
+                                subject=subject, class_id=class_id, file_data=file_data, file_name=filename, user_id=current_user.username)
+            current_user.username
         db.session.add(homework)
         db.session.commit()
-        flash('Homework uploaded successfully.', 'success')
+        session.pop('_flashes', None)
+        flash('Devoir envoyé correctement.', 'success')
         return redirect(url_for('homework'))
     else:
         return render_template('upload.html', form=form)
+
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -118,7 +125,8 @@ def register():
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash('Congratulations, you are now a registered user!')
+        session.pop('_flashes', None)
+        flash('Vous avez bien été enregistré!')
         return redirect(url_for('login'))
     return render_template('register.html', form=form)
 
@@ -129,14 +137,15 @@ def login():
     form = forms.LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email_or_username.data).first()
-        if user is None:
-            user = User.query.filter_by(username=form.email_or_username.data).first()
         if user is None or not user.check_password(form.password.data):
-            flash('Invalid email or password')
+            session.pop('_flashes', None)
+            flash('Email ou mot de passe invalide.')
             return redirect(url_for('login'))
         login_user(user)
         return redirect(url_for('home'))
     return render_template('login.html', form=form)
+
+
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -144,30 +153,47 @@ def profile():
     form = forms.UpdateProfileForm()
     if form.validate_on_submit():
         if current_user.check_password(form.password.data):
-            current_user.email = form.email.data
-            current_user.username = form.name.data
-            db.session.commit()
-            flash('Profile updated')
-            return redirect(url_for('profile'))
+            user = User.query.filter_by(id=current_user.id).first()
+            if user.email != form.email.data and User.query.filter_by(email=form.email.data).first():
+                session.pop('_flashes', None)
+                flash('Cet email est déja utilisée.')
+            else:
+                user.email = form.email.data
+                user.username = form.name.data
+                db.session.commit()
+                return redirect(url_for('profile'))
         else:
-            flash('Incorrect password')
+            session.pop('_flashes', None)
+            flash('Mot de passe incorrect.')
     return render_template('profile.html', form=form, current_user=current_user)
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out')
+    session.pop('_flashes', None)
+    flash('Vous avez été déconnecté.')
     return redirect(url_for('login'))
 
 @app.route('/upload_error')
 def upload_error():
     return render_template('upload_error.html')
-
+@app.route('/')
 @app.route('/home')
 def home():
+    print(current_user.username)
     return render_template('index.html')
 
+
+
+
+@app.route('/download_file/<int:homework_id>')
+def download_file(homework_id):
+    homework = Homework.query.filter_by(id=homework_id).first()
+    file_data = homework.file_data
+    response = make_response(file_data)
+    response.headers['Content-Disposition'] = 'attachment; filename={}'.format(homework.file_name)
+    return response
 
 if __name__ == "__main__":
     app.run()

@@ -5,24 +5,24 @@ from wtforms.validators import DataRequired, Email, ValidationError
 
 
 class RegistrationForm(FlaskForm):
-    name = StringField('Full Name', validators=[DataRequired()])
+    name = StringField('Prénom', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    submit = SubmitField('Register')
+    password = PasswordField('Mot de passe', validators=[DataRequired()])
+    submit = SubmitField("S'inscrire")
 
 
 
 class LoginForm(FlaskForm):
-    email_or_username = StringField('Email or Username', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    submit = SubmitField('Login')
+    email_or_username = StringField('Email', validators=[DataRequired()])
+    password = PasswordField('Mot de passe', validators=[DataRequired()])
+    submit = SubmitField('Se connecter')
 
 
 class UpdateProfileForm(FlaskForm):
-    name = StringField('Full Name', validators=[DataRequired()])
+    name = StringField('Prénom', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Enter Password to Confirm Changes', validators=[DataRequired()])
-    submit = SubmitField('Save Changes')
+    password = PasswordField('Entrer le mot de passe pour confirmer les changements.', validators=[DataRequired()])
+    submit = SubmitField('Sauvegarder les changements.')
 
 
 class UpvoteForm(FlaskForm):
@@ -31,14 +31,11 @@ class UpvoteForm(FlaskForm):
 
 class UploadForm(FlaskForm):
     classes = ["1 G-B"]
-    matieres = ["Français", "Histoire Géographie", "Espagnol", "Anglais", "Sport", "Spé NSI", "Spé Maths", "Spé Physique", "ES Physique", "ES Maths", "ES Svt"]
-    profs = ["MARCHINI", "MALPELLI", "CABARCOS", "MUSSI", "RIGAUX", "BRUNINI", "AVENOSO", "CASTELLO", "CHAPUIS", "MURACCIOLES"]
+    matieres = ["Français", "Histoire Géographie", "Espagnol", "Anglais", "Sport", "ES Physique", "ES Maths", "ES Svt"]
+    profs = ["MARCHINI", "MALPELLI", "CABARCOS", "MUSSI", "RIGAUX", "BRUNINI", "AVENOSO", "CASTELLO", "CHAPUIS", "MURACCIOLES", "ROMEO"]
     title = StringField('Titre', validators=[DataRequired()])
     content = StringField('Contenu', validators=[DataRequired()])
-    file = FileField('file', validators=[
-        FileAllowed(['txt'], 'Text files only!'),
-        FileSize(max_size=1 * 1024 * 1024, message='File too large! Maximum allowed size is 1MB.')
-    ])
+    file = FileField('file', validators=[])
 
     due_date = DateField('Date Limite', format='%d-%m-%Y')
     teacher = SelectField('Professeur', choices=profs)
