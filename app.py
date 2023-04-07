@@ -63,15 +63,27 @@ with app.app_context():
     db.create_all()
 
 
-@app.route('/homeworks/', defaults={'homework_id': None}, methods=['GET'])
-@app.route('/homeworks/<int:homework_id>', methods=['GET'])
-def homework(homework_id):
+@app.route('/homeworks/', defaults={'homework_id': None, 'answer_id': None}, methods=['GET'])
+@app.route('/homeworks/<int:homework_id>/', defaults={'answer_id': None}, methods=['GET'])
+@app.route('/homeworks/<int:homework_id>/<int:answer_id>', methods=['GET'])
+def homeworks(homework_id=None, answer_id=None):
     if homework_id:
-        homework = Homework.query.get(homework_id)
+        homework = Homework.query.get(int(homework_id))
         answers = Answer.query.filter_by(homework_id=homework_id).all()
         if homework:
-            return render_template('homework_answers.html', homework=homework, answers=answers)
+            if answer_id:
+                answer = Answer.query.get(int(answer_id))
+                if answer:
+                    return render_template('answer.html', homework=homework, ans=answer)
+                else:
+                    session.pop('_flashes', None)
+                    flash('Answer not found.')
+                    return redirect(url_for('homeworks')+str(homework_id))
+
+            else:
+                return render_template('homework_answers.html', homework=homework, answers=answers)
         else:
+            session.pop('_flashes', None)
             flash('Homework not found.')
             return redirect(url_for('homeworks'))
     else:
@@ -121,7 +133,7 @@ def upload():
         db.session.commit()
         session.pop('_flashes', None)
         flash('Devoir envoyé correctement.', 'success')
-        return redirect(url_for('homework'))
+        return redirect(url_for('homeworks'))
     else:
         return render_template('upload_hw.html', form=form)
 
@@ -176,7 +188,7 @@ def upload_answer(homework_id):
 
         session.pop('_flashes', None)
         flash('Réponse envoyée avec succès', 'success')
-        return redirect(url_for('homework'))
+        return redirect(url_for('homeworks') + str(homework_id))
 
     else:
         return render_template('upload_answer.html', form=form)

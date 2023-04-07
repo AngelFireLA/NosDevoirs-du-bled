@@ -7,9 +7,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
 </head>
 <body>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="flashes">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
     <div id="homework-list">
         {% for hw in homework_list %}
-        <a href="{{ url_for('homework', homework_id=hw.id) }}" style="text-decoration: none;">
+        <a href="{{ url_for('homeworks', homework_id=hw.id) }}" style="text-decoration: none;">
         <div class="homework-card card my-card">
             <div class="card-header">
                 <div class="row justify-content-between align-items-center">
@@ -46,8 +55,8 @@
                 </div>
             </div>
         </div>
-        {% endfor %}
         </a>
+        {% endfor %}
     </div>
 </body>
 

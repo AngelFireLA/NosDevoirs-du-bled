@@ -111,7 +111,7 @@ body {
     color: black;
 }
 
-.my-card p:hover {
+.my-card-answer p:hover {
     color: #79ec6f; /* Set link color to green */
 }
 
@@ -139,6 +139,43 @@ body {
 /* Set the background color of the page to a light blue */
 body {
     background-color: #f0f8ff;
+}
+
+.answer-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 2px solid #79ec6f;
+    border-radius: 20px;
+    background-color: #fff;
+}
+
+.answer-container h1 {
+    margin-top: 0;
+}
+
+.answer-content {
+    font-size: 18px;
+    line-height: 1.5;
+    margin-top: 20px;
+}
+
+.answer-file {
+    margin-top: 20px;
+}
+
+.answer-file a {
+    display: block;
+    text-align: center;
+    background-color: #007bff;
+    color: #fff;
+    padding: 10px;
+    border-radius: 10px;
+    text-decoration: none;
+}
+
+.answer-file a:hover {
+    background-color: #0056b3;
 }
 
 

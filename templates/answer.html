@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homework</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+</head>
+<body>
+    <div class="answer-container">
+        <h1>{{ ans.title }}</h1>
+        <p>{{ ans.content }}</p>
+        {% if ans.file_data %}
+        <div class="answer-file">
+            <a href="{{ url_for('download_file', answer_id=ans.id) }}">Télécharger le fichier associé : {{ ans.file_name }}</a>
+        </div>
+        {% endif %}
+    </div>
+</body>
