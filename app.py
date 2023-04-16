@@ -1,18 +1,18 @@
-import io
-
-from flask_migrate import Migrate
-from werkzeug.utils import secure_filename
 import os
+
+from flask import Flask, flash, redirect, render_template, request, url_for, make_response, session, abort
+from flask_login import LoginManager
+from flask_login import UserMixin
+from flask_login import current_user, login_user, logout_user, login_required
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from wtforms import StringField, SubmitField, PasswordField, DateField, SelectField, FileField
 from wtforms.validators import DataRequired, Email
+from datetime import datetime
 from config import Config
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_login import current_user, login_user, logout_user, login_required
-from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, flash, redirect, render_template, request, url_for, make_response, session, send_file, abort
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -20,6 +20,7 @@ db = SQLAlchemy(app)
 login = LoginManager(app)
 login.login_view = "login"
 migrate = Migrate(app, db)
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -38,6 +39,7 @@ class User(UserMixin, db.Model):
     def load_user(id):
         return User.query.get(int(id))
 
+
 class Homework(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), index=True, unique=True)
@@ -48,9 +50,10 @@ class Homework(db.Model):
     class_id = db.Column(db.String(100))
     user_id = db.Column(db.String(200))
 
+
 class Answer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    #homework_id is the id of the homework it answers
+    # homework_id is the id of the homework it answers
     homework_id = db.Column(db.Integer)
     title = db.Column(db.String(200), index=True, unique=True)
     content = db.Column(db.String(2000))
@@ -58,6 +61,7 @@ class Answer(db.Model):
     due_date = db.Column(db.String(50))
     file_data = db.Column(db.LargeBinary, nullable=True)
     file_name = db.Column(db.String(100), nullable=True)
+
 
 with app.app_context():
     db.create_all()
@@ -78,7 +82,7 @@ def homeworks(homework_id=None, answer_id=None):
                 else:
                     session.pop('_flashes', None)
                     flash('Answer not found.')
-                    return redirect(url_for('homeworks')+str(homework_id))
+                    return redirect(url_for('homeworks') + str(homework_id))
 
             else:
                 return render_template('homework_answers.html', homework=homework, answers=answers)
@@ -88,7 +92,18 @@ def homeworks(homework_id=None, answer_id=None):
             return redirect(url_for('homeworks'))
     else:
         homework_list = Homework.query.all()
-        return render_template('homeworks.html', homework_list=homework_list)
+        today = datetime.now().strftime('%Y-%m-%d')
+        filtered_homework_list = [hw for hw in homework_list if
+                                  datetime.strptime(hw.due_date, '%Y-%m-%d') >= datetime.strptime(today, '%Y-%m-%d')]
+        filtered_homework_list = sorted(filtered_homework_list,
+                                        key=lambda hw: datetime.strptime(hw.due_date, '%Y-%m-%d'))
+        filtered_homework_list = [{'id': hw.id, 'title': hw.title,
+                                   'due_date': datetime.strptime(hw.due_date, '%Y-%m-%d').strftime('%d-%m-%y'),
+                                   'content': hw.content, 'teacher': hw.teacher, 'subject': hw.subject,
+                                   'class_id': hw.class_id, 'user_id': hw.user_id} for hw in
+                                  filtered_homework_list]
+        return render_template('homeworks.html', homework_list=filtered_homework_list)
+
 
 def change_user_status(email, status):
     user = User.query.filter_by(email=email).first()
@@ -101,6 +116,22 @@ def change_user_status(email, status):
     print(f"User with email '{email}' status changed to '{status}'.")
 
 
+#function to search for a homework with a speicific tag in the url
+@app.route('/search_homeworks/<string:tag>', methods=['GET'])
+def search_homeworks(tag):
+    homework_list = Homework.query.all()
+    #make a filtered_homework_list variable that contains all homework that have the tag in their name or teacher or subject or class_id, that isn't case sensitive, and doesn't show the passed homeworks
+    filtered_homework_list = [hw for hw in homework_list if tag.lower() in hw.title.lower() or tag.lower() in hw.teacher.lower() or tag.lower() in hw.subject.lower() or tag.lower() in hw.class_id.lower()]
+    #checks if the date of each filtered homework is already passed, if passed, remove the homework from the list
+    today = datetime.now().strftime('%Y-%m-%d')
+    filtered_homework_list = [hw for hw in filtered_homework_list if datetime.strptime(hw.due_date, '%Y-%m-%d') >= datetime.strptime(today, '%Y-%m-%d')]
+
+    filtered_homework_list = [{'id': hw.id, 'title': hw.title,
+                               'due_date': datetime.strptime(hw.due_date, '%Y-%m-%d').strftime('%d-%m-%y'),
+                               'content': hw.content, 'teacher': hw.teacher, 'subject': hw.subject,
+                               'class_id': hw.class_id, 'user_id': hw.user_id} for hw in
+                              filtered_homework_list]
+    return render_template('homeworks.html', homework_list=filtered_homework_list)
 
 @app.route('/envoyer_devoir', methods=['GET', 'POST'])
 @login_required
@@ -111,6 +142,9 @@ def upload():
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
+        if len(content)> 10000:
+            flash('Le contenu en doit pas faire plus de 10000 caractères.', 'error')
+            return redirect(url_for('upload_error'))
         due_date = request.form['due_date']
         teacher = request.form['teacher']
         subject = request.form['subject']
@@ -124,11 +158,10 @@ def upload():
             return redirect(url_for('upload_error'))
         if not current_user:
             homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
-                            subject=subject, class_id=class_id)
+                                subject=subject, class_id=class_id)
         else:
             homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
                                 subject=subject, class_id=class_id, user_id=current_user.username)
-            current_user.username
         db.session.add(homework)
         db.session.commit()
         session.pop('_flashes', None)
@@ -138,12 +171,14 @@ def upload():
         return render_template('upload_hw.html', form=form)
 
 
+
 @app.route('/envoyer_reponse/<int:homework_id>', methods=['GET', 'POST'])
 @login_required
 def upload_answer(homework_id):
     homework = Homework.query.filter_by(id=homework_id).first()
     if not homework:
-        flash("L'identifiant de devoir est invalide, veuillez ne pas toucher à l'identifiant de l'url la prochaine fois.")
+        flash(
+            "L'identifiant de devoir est invalide, veuillez ne pas toucher à l'identifiant de l'url la prochaine fois.")
         return redirect(url_for('home'))
     if not current_user.status == "admin":
         abort(403)
@@ -151,6 +186,9 @@ def upload_answer(homework_id):
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
+        if len(content)> 10000:
+            flash('Le contenu en doit pas faire plus de 10000 caractères.', 'error')
+            return redirect(url_for('upload_error'))
         due_date = homework.due_date
         file = request.files.get('file')
         if file:
@@ -162,11 +200,11 @@ def upload_answer(homework_id):
                 flash('Le fichier ne doit pas faire plus de 5 mo.', 'error')
                 return redirect(url_for('upload_error'))
             # Check if file type is allowed
-            allowed_extensions = ['txt', 'odt', 'docx', '.txt', '.odt', '.docx']
+            allowed_extensions = ['zip', '.zip', 'txt', 'odt', 'docx', '.txt', '.odt', '.docx', '.png', '.jpg', '.gif', 'png', 'jpg', 'gif']
             file_ext = os.path.splitext(file.filename)[1].lower()
             if file_ext not in allowed_extensions:
                 session.pop('_flashes', None)
-                flash('Type de fichier non autorisé: txt, odt, docx', 'error')
+                flash('Type de fichier non autorisé: zip, txt, odt, docx, png, jpg, gif', 'error')
                 return redirect(url_for('upload_error'))
         else:
             filename = None
@@ -193,6 +231,10 @@ def upload_answer(homework_id):
     else:
         return render_template('upload_answer.html', form=form)
 
+#route for a tutorial page
+@app.route('/tuto')
+def tuto():
+    return ""
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -209,6 +251,7 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html', form=form)
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -223,7 +266,6 @@ def login():
         login_user(user)
         return redirect(url_for('home'))
     return render_template('login.html', form=form)
-
 
 
 @app.route('/profile', methods=['GET', 'POST'])
@@ -247,6 +289,7 @@ def profile():
             flash('Mot de passe incorrect.')
     return render_template('profile.html', form=form, current_user=current_user)
 
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -255,13 +298,16 @@ def logout():
     flash('Vous avez été déconnecté.')
     return redirect(url_for('login'))
 
+
 @app.route('/upload_error')
 def upload_error():
     return render_template('upload_error.html')
 
+
 @app.route('/')
 @app.route('/home')
 def home():
+    #make the four buttons clickable and redirect to their corresponding template
     return render_template('index.html')
 
 
@@ -273,12 +319,12 @@ def download_file(answer_id):
     response.headers['Content-Disposition'] = 'attachment; filename={}'.format(answer.file_name)
     return response
 
+
 class RegistrationForm(FlaskForm):
     name = StringField('Prénom', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Mot de passe', validators=[DataRequired()])
     submit = SubmitField("S'inscrire")
-
 
 
 class LoginForm(FlaskForm):
@@ -293,13 +339,15 @@ class UpdateProfileForm(FlaskForm):
     password = PasswordField('Entrer le mot de passe pour confirmer les changements.', validators=[DataRequired()])
     submit = SubmitField('Sauvegarder les changements.')
 
+
 class UploadHomeworkForm(FlaskForm):
     classes = ["1 G-B"]
-    matieres = ["Français", "Histoire Géographie", "Espagnol", "Anglais", "Sport", "ES Physique", "ES Maths", "ES Svt"]
-    profs = ["MARCHINI", "MALPELLI", "CABARCOS", "MUSSI", "RIGAUX", "BRUNINI", "AVENOSO", "CASTELLO", "CHAPUIS", "MURACCIOLES", "ROMEO"]
+    matieres = ["Français", "Histoire Géographie", "Sport", "ES Physique", "ES Maths", "ES Svt"]
+    profs = ["MARCHINI", "MALPELLI", "RIGAUX", "BRUNINI", "AVENOSO", "CASTELLO", "CHAPUIS",
+             "MURACCIOLES"]
     title = StringField('Titre', validators=[DataRequired()])
     content = StringField('Contenu', validators=[DataRequired()])
-    due_date = DateField('Date Limite', format='%d-%m-%Y')
+    due_date = DateField('Date Limite', format='%d/%m/%Y')
     teacher = SelectField('Professeur', choices=profs)
     subject = SelectField('Matière', choices=matieres)
     classe = SelectField('Classe', choices=classes)
@@ -312,10 +360,12 @@ class UploadAnswerForm(FlaskForm):
     file = FileField('file', validators=[])
     submit = SubmitField('Envoyer')
 
+
 if __name__ == "__main__":
-    start = input("Waiting for command : ")
-    if start == "start":
+    #start = input("Waiting for command : ")
+    #if start == "start":
         app.run()
-    else:
-        with app.app_context():
-            exec('change_user_status("lysandre@mail.com", "admin")')
+    #else:
+
+        #with app.app_context():
+            #exec('change_user_status("lysandre@mail.com", "admin")')

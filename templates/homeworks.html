@@ -16,10 +16,28 @@
             </ul>
         {% endif %}
     {% endwith %}
+<div id="search-container" class="search-container">
+  <form action="{{ url_for('search_homeworks', tag='') }}" method="GET" class="search-bar" onsubmit="updateAction(event)">
+    <input type="text" placeholder="Rechercher un devoir." name="tag">
+    <button type="submit"><img src="{{ url_for('static', filename='img/search.png') }}"></button>
+  </form>
+</div>
+
+<script>
+  function updateAction(event) {
+    event.preventDefault();
+    var tag = document.getElementsByName("tag")[0].value;
+    var url = "{{ url_for('search_homeworks', tag='') }}";
+    url += encodeURIComponent(tag);
+
+    // Redirect to the generated URL
+    window.location.href = url;
+  }
+</script>
     <div id="homework-list">
         {% for hw in homework_list %}
-        <a href="{{ url_for('homeworks', homework_id=hw.id) }}" style="text-decoration: none;">
         <div class="homework-card card my-card">
+            <a href="{{ url_for('homeworks', homework_id=hw.id) }}" style="text-decoration: none;">
             <div class="card-header">
                 <div class="row justify-content-between align-items-center">
                     <div class="col-auto">
@@ -48,14 +66,11 @@
 
                     <div class="col-auto">
                         <p style="font-size: 20px;">{{ hw.user_id }}</p>
-                        {% if hw.file_data %}
-                        <a href="{{ url_for('download_file', homework_id=hw.id) }}" class="btn btn-primary" style="background-color: #007bff; color: white;">Download File</a>
-                        {% endif %}
                     </div>
                 </div>
             </div>
+            </a>
         </div>
-        </a>
         {% endfor %}
     </div>
 </body>

@@ -4,10 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-         .option-btn { width: 45%; height: 200px; margin: 2%; display: flex; align-items: center; justify-content: center; } .options { display: flex; flex-wrap: wrap; justify-content: space-around; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+<style>
+    .centered-btn {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        margin-top: 10px;
+    }
+    .custom-btn {
+        font-size: 1.5rem;
+        padding: 1.5rem 3rem;
+        border-radius: 50px;
+    }
+</style>
 </head>
 <body>
     {% with messages = get_flashed_messages() %}
@@ -20,11 +31,32 @@
         {% endif %}
     {% endwith %}
 <div class="container">
-    <div class="d-flex justify-content-between"><h1>Home</h1> <a href="{{ url_for('profile') }}">Profile</a></div>
-    <div class="options"><a href="#" class="btn btn-primary option-btn">Professeurs</a> <a href="#"
-                                                                                           class="btn btn-primary option-btn">Matières</a>
-        <a href="#" class="btn btn-primary option-btn">Calendrier</a> <a href="#" class="btn btn-primary option-btn">Classe</a>
+    <div class="d-flex justify-content-between"><h1>Home</h1> <a href="{{ url_for('tuto') }}" style="font-size: 25px;">Nouveau ? Viens voir le tuto</a> <a href="{{ url_for('profile') }}" style="font-size: 25px;">Profile</a></div>
     </div>
 </div>
+<div class="centered-btn" style="padding-top: 20px;">
+    <a href="{{ url_for('homeworks') }}" class="btn btn-primary option-btn custom-btn">Accéders aux Devoirs</a>
+</div>
+
+    <p style="text-align : center; padding-top: 50px; font-size: 25px;">Rechercher un devoir spécifique</p>
+<div id="search-container" class="search-container">
+
+  <form action="{{ url_for('search_homeworks', tag='') }}" method="GET" class="search-bar" onsubmit="updateAction(event)">
+    <input type="text" placeholder="Rechercher un devoir." name="tag">
+    <button type="submit"><img src="{{ url_for('static', filename='img/search.png') }}"></button>
+  </form>
+</div>
+
+<script>
+  function updateAction(event) {
+    event.preventDefault();
+    var tag = document.getElementsByName("tag")[0].value;
+    var url = "{{ url_for('search_homeworks', tag='') }}";
+    url += encodeURIComponent(tag);
+
+    // Redirect to the generated URL
+    window.location.href = url;
+  }
+</script>
 </body>
 </html>

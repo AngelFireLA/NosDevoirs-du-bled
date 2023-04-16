@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Envoyer Devoir</title>
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-</head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}"></head>
 <body>
     {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -23,27 +22,32 @@
         <label for="{{ form.title.id }}">{{ form.title.label }}</label>
         {{ form.title(class="form-control", placeholder="Titre") }}
     </div>
+    <br>
     <div class="form-group">
         <label for="{{ form.content.id }}">{{ form.content.label }}</label>
         {{ form.content(class="form-control") }}
     </div>
-
+        <br>
     <div class="form-group">
         <label for="{{ form.due_date.id }}">{{ form.due_date.label }}</label>
         {{ form.due_date(class="form-control", placeholder="Devoir pour cette Date :") }}
     </div>
+        <br>
     <div class="form-group">
         <label for="{{ form.teacher.id }}">{{ form.teacher.label }}</label>
         {{ form.teacher(class="form-control") }}
     </div>
+        <br>
     <div class="form-group">
         <label for="{{ form.subject.id }}">{{ form.subject.label }}</label>
         {{ form.subject(class="form-control") }}
     </div>
+        <br>
     <div class="form-group">
         <label for="{{ form.classe.id }}">{{ form.classe.label }}</label>
         {{ form.classe(class="form-control") }}
     </div>
+        <br>
     <div class="form-group">
         {{ form.submit(class="btn btn-primary") }}
     </div>

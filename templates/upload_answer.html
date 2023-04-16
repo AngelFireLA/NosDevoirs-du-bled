@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Envoyer Réponse</title>
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
 </head>
 <body>
     {% with messages = get_flashed_messages() %}
@@ -24,14 +24,17 @@
                 <label for="{{ form.title.id }}">{{ form.title.label }}</label>
                 {{ form.title(class="form-control", placeholder="Title") }}
             </div>
+            <br>
             <div class="form-group">
                 <label for="{{ form.content.id }}">{{ form.content.label }}</label>
                 {{ form.content(class="form-control") }}
             </div>
+            <br>
             <div class="form-group">
-                <label for="{{ form.file.id }}">{{ form.file.label }}</label>
+                <label for="{{ form.file.id }}">Fichier Réponse (.zip, .txt, o.dt, .docx, .png, .jpg, .gif) (5mo max)</label>
                 {{ form.file(class="form-control") }}
             </div>
+            <br>
             <div class="form-group">
                 {{ form.submit(class="btn btn-primary") }}
             </div>
