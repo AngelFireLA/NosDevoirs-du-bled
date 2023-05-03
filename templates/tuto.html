@@ -1,0 +1,96 @@
+    <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutoriel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+</head>
+
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a style="padding-left: 1%;" class="navbar-brand" href="{{ url_for('home') }}">Accueil</a>
+            <ul class="nav navbar-nav">
+                <li class="nav-item"><a class="navbar-brand" href="{{ url_for('homeworks') }}">Devoirs</a></li>
+                <li class="nav-item"><a class="navbar-brand" href="{{ url_for('profile') }}">Profil</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main class="container">
+            {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="flashes">
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+        <h1>Tutoriel</h1>
+        <br>
+        <section>
+            <div class="card">
+                <div class="card-header">
+                    <h2>S'inscrire et se connecter</h2>
+                </div>
+                <div class="card-body">
+                    <p style="font-size: 18px;">
+                        Pour utiliser pleinement notre site, vous devez d'abord vous inscrire. Cliquez sur
+                        le bouton "S'inscrire" sur la page d'accueil, puis remplissez votre prénom et nom,
+                        votre adresse e-mail et choisissez un mot de passe. Une fois l'inscription
+                        terminée, vous pourrez vous connecter avec votre adresse e-mail et le mot de passe
+                        que vous avez défini.
+                    </p>
+                </div>
+            </div>
+            <br>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Voir les devoirs</h2>
+                </div>
+                <div class="card-body">
+                    <p style="font-size: 18px;">
+                        Pour voir la liste des devoirs, cliquez sur le lien "Devoirs" dans la
+                        barre de navigation en haut de la page d'accueil. Les devoirs seront affichés, triés par date limite la plus proche.
+                        Les devoirs ayant une date limite passée n'apparaitrons pas.
+                        Vous pouvez également rechercher des devoirs spécifiques en utilisant la barre de
+                        recherche située en haut de la liste des devoirs.
+                    </p>
+                </div>
+            </div>
+            <br>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Envoyer un devoir</h2>
+                </div>
+                <div class="card-body">
+                    <p style="font-size: 18px;">
+                        Pour ajouter un nouveau devoir, cliquez sur le lien "Envoyer devoir" dans la liste des devoirs en haut.
+                        Attention, il faudra que votre compte ait l'accès nécessaire.
+                        Vous devrez fournir un titre, un contenu, une date limite, un professeur,
+                        une matière et une classe pour le devoir. Une fois ces informations ajoutées, cliquez sur le bouton "Envoyer" pour
+                        soumettre le devoir et l'ajouter à la liste des devoirs.
+                    </p>
+                </div>
+            </div>
+            <br>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Envoyer une réponse à un devoir</h2>
+                </div>
+                <div class="card-body">
+                    <p style="font-size: 18px;">
+                        Pour soumettre une réponse à un devoir, cliquez sur le devoir pour lequel vous souhaitez soumettre une réponse.
+                        Cliquez ensuite sur le lien "Envoyer une réponse" en haut à droite. Remplissez les informations requises :
+                        titre, contenu et, si nécessaire, un fichier réponse (pour pouvoir envoyer plusieurs fichiers, utilisez un .zip). Cliquez sur le bouton "Envoyer" pour soumettre votre réponse.
+                    </p>
+                </div>
+            </div>
+            <br>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,5 +1,6 @@
 import os
 
+
 from flask import Flask, flash, redirect, render_template, request, url_for, make_response, session, abort
 from flask_login import LoginManager
 from flask_login import UserMixin
@@ -136,7 +137,7 @@ def search_homeworks(tag):
 @app.route('/envoyer_devoir', methods=['GET', 'POST'])
 @login_required
 def upload():
-    if not current_user.status == "admin":
+    if not current_user.status == "admin" or current_user.status == "uploader":
         abort(403)
     form = UploadHomeworkForm()
     if request.method == 'POST':
@@ -234,7 +235,9 @@ def upload_answer(homework_id):
 #route for a tutorial page
 @app.route('/tuto')
 def tuto():
-    return ""
+    return render_template("tuto.html")
+
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():

@@ -22,14 +22,18 @@
         <div class="form-group"><label for="{{ form.name.label.text }}">Prénom et Nom:</label> {{
             form.name(class="form-control", value=current_user.username) }}
         </div>
+        <br>
         <div class="form-group"><label for="{{ form.email.label.text }}">Email:</label> {{
             form.email(class="form-control", value=current_user.email) }}
         </div>
+        <br>
         <div class="form-group"><label for="{{ form.password.label.text }}">Entrer le mot de passe pour confirmer les changements:</label>
             {{ form.password(class="form-control") }}
         </div>
+        <br>
         {{ form.submit(class="btn btn-primary") }}
     </form>
+    <br>
     <a href="{{url_for('logout')}}"> Logout</a>
 </div>
 </body>

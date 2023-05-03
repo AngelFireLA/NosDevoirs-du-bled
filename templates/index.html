@@ -14,9 +14,9 @@
         margin-top: 10px;
     }
     .custom-btn {
-        font-size: 1.5rem;
-        padding: 1.5rem 3rem;
-        border-radius: 50px;
+        font-size: 3rem;
+        padding: 3rem 6rem;
+        border-radius: 75px;
     }
 </style>
 </head>
@@ -34,11 +34,11 @@
     <div class="d-flex justify-content-between"><h1>Home</h1> <a href="{{ url_for('tuto') }}" style="font-size: 25px;">Nouveau ? Viens voir le tuto</a> <a href="{{ url_for('profile') }}" style="font-size: 25px;">Profile</a></div>
     </div>
 </div>
-<div class="centered-btn" style="padding-top: 20px;">
+<div class="centered-btn" style="padding-top: 10%;">
     <a href="{{ url_for('homeworks') }}" class="btn btn-primary option-btn custom-btn">Accéders aux Devoirs</a>
 </div>
 
-    <p style="text-align : center; padding-top: 50px; font-size: 25px;">Rechercher un devoir spécifique</p>
+    <p style="text-align : center; padding-top: 5%; font-size: 25px;">Rechercher un devoir spécifique</p>
 <div id="search-container" class="search-container">
 
   <form action="{{ url_for('search_homeworks', tag='') }}" method="GET" class="search-bar" onsubmit="updateAction(event)">

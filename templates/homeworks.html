@@ -17,10 +17,15 @@
         {% endif %}
     {% endwith %}
 <div id="search-container" class="search-container">
-  <form action="{{ url_for('search_homeworks', tag='') }}" method="GET" class="search-bar" onsubmit="updateAction(event)">
+  <form action="{{ url_for('search_homeworks', tag='') }}" method="GET" class="search-bar" onsubmit="updateAction(event)" style="margin-left: 30%;">
     <input type="text" placeholder="Rechercher un devoir." name="tag">
     <button type="submit"><img src="{{ url_for('static', filename='img/search.png') }}"></button>
   </form>
+<button class="btn btn-primary" style="font-size: 18px; border-radius: 60px; padding: 1%; background-color: NUMBER; margin-left: 20%;">
+    <a href="{{ url_for('upload') }}" style="color: white; text-decoration: none;">
+        Envoyer un devoir
+    </a>
+</button>
 </div>
 
 <script>
