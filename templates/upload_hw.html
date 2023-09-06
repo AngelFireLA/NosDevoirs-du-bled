@@ -34,13 +34,14 @@
     </div>
         <br>
     <div class="form-group">
-        <label for="{{ form.teacher.id }}">{{ form.teacher.label }}</label>
-        {{ form.teacher(class="form-control") }}
-    </div>
-        <br>
-    <div class="form-group">
         <label for="{{ form.subject.id }}">{{ form.subject.label }}</label>
         {{ form.subject(class="form-control") }}
+    </div>
+
+    <br>
+    <div class="form-group">
+        <label for="{{ form.teacher.id }}">{{ form.teacher.label }}</label>
+        {{ form.teacher(class="form-control") }}
     </div>
         <br>
     <div class="form-group">
@@ -54,5 +55,21 @@
     </form>
     <div id="message"></div> <!-- Placeholder for displaying upload message -->
 </div>
+
+<script>
+    const subjectField = document.getElementById("subject");
+    const teacherField = document.getElementById("teacher");
+    const teachers = {{ matieres | tojson }};
+    subjectField.addEventListener("change", () => {
+        const selectedSubject = subjectField.value;
+        teacherField.innerHTML = "";
+        teachers[selectedSubject].forEach((teacher) => {
+            const option = document.createElement("option");
+            option.value = teacher;
+            option.text = teacher;
+            teacherField.add(option);
+        });
+    });
+</script>
 </body>
 </html>

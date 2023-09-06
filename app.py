@@ -11,7 +11,7 @@ from flask_wtf import FlaskForm
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from wtforms import StringField, SubmitField, PasswordField, DateField, SelectField, FileField
-from wtforms.validators import DataRequired, Email
+from wtforms.validators import DataRequired, Email, ValidationError
 from datetime import datetime
 from config import Config
 
@@ -22,19 +22,35 @@ login = LoginManager(app)
 login.login_view = "login"
 migrate = Migrate(app, db)
 
+matieres = {"Philosophie": ["Leca"], "Histoire Géographie": ["Pagani"], "Sport": ["Albert", "Pescetti", "Rigaux", "Uribelarrea"], "ES Physique Chimie": ["Guidicelli"], "ES Maths": ["Baulenas"], "ES Svt": ["Albertini"], "EMC": ["Pagani"], "Espagnol": ["Tamagna Madrau"], "Anglais": ["Khelifi", "Guaitella"], "Italien": ["Rossi"], "Spé Mathématiques": ["Brunini", "Roth", "Cazzone"], "Spé Physique Chimie": ["Chapuis"], "Spé NSI": [], "Spé SVT": ["Castello"], "Spé Science de l'Ingénieur": ["Puntel", "Vadella", "Avenoso"]}
+teachers_list = []
+for k,v in matieres.items():
+    for i in v:
+        teachers_list.append(i)
+
+matieres_list = list(matieres.keys())
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=False)
     status = db.Column(db.String(64), unique=False)
     email = db.Column(db.String(120), index=True, unique=True)
+    classe_id = db.Column(db.String(64), index=True, unique=False, nullable=True)
+    specialite1 = db.Column(db.String(64), index=True, unique=False, nullable=True)
+    specialite2 = db.Column(db.String(64), index=True, unique=False, nullable=True)
+    specialite3 = db.Column(db.String(64), index=True, unique=False, nullable=True)
+    specialite1_profs = db.Column(db.String(64), index=True, unique=False, nullable=True)
+    specialite2_profs = db.Column(db.String(64), index=True, unique=False, nullable=True)
+    specialite3_profs = db.Column(db.String(64), index=True, unique=False, nullable=True)
     password_hash = db.Column(db.String(128))
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = password
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        if password == self.password_hash or check_password_hash(self.password_hash, password):
+            return True
+        return False
 
     @login.user_loader
     def load_user(id):
@@ -82,14 +98,14 @@ def homeworks(homework_id=None, answer_id=None):
                     return render_template('answer.html', homework=homework, ans=answer)
                 else:
                     session.pop('_flashes', None)
-                    flash('Answer not found.')
+                    flash('Réponse non trouvée.')
                     return redirect(url_for('homeworks') + str(homework_id))
 
             else:
                 return render_template('homework_answers.html', homework=homework, answers=answers)
         else:
             session.pop('_flashes', None)
-            flash('Homework not found.')
+            flash('Devoir non trouvé.')
             return redirect(url_for('homeworks'))
     else:
         homework_list = Homework.query.all()
@@ -137,40 +153,80 @@ def search_homeworks(tag):
 @app.route('/envoyer_devoir', methods=['GET', 'POST'])
 @login_required
 def upload():
-    if not current_user.status == "admin" or current_user.status == "uploader":
-        abort(403)
     form = UploadHomeworkForm()
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        if len(content)> 10000:
-            flash('Le contenu en doit pas faire plus de 10000 caractères.', 'error')
-            return redirect(url_for('upload_error'))
-        due_date = request.form['due_date']
-        teacher = request.form['teacher']
-        subject = request.form['subject']
-        class_id = request.form['classe']
 
+    # dynamically update the teacher field options based on the selected subject
+    form.subject.choices = [(matiere, matiere) for matiere in matieres.keys()]
+    form.teacher.choices = [(prof, prof) for prof in matieres.get(form.subject.data, [])]
+
+    if request.method == 'POST':
+        # validate the form
+        title = form.title.data
         # check if there is already a homework with the same title
         existing_homework = Homework.query.filter_by(title=title).first()
         if existing_homework:
-            session.pop('_flashes', None)
-            flash('Un devoir avec le même titre existe déja', 'error')
+            flash('Un devoir avec le même titre existe déjà', 'error')
             return redirect(url_for('upload_error'))
+
+        content = form.content.data
+        if len(content) > 10000:
+            flash('Le contenu en doit pas faire plus de 10000 caractères.', 'error')
+            return redirect(url_for('upload_error'))
+
+        due_date = str(request.form['due_date'])
+        year, month, day = due_date.split('-')
+
+        # Convert the components to integers if needed
+        year = int(year)
+        month = int(month)
+        day = int(day)
+
+        due_date = datetime(year, month, day)
+        reference_before_date = datetime(2023, 9, 5)
+        reference_after_date = datetime(2024, 7, 5)
+        is_after = due_date > reference_before_date
+        is_before = due_date < reference_after_date
+        if not is_after:
+            flash('Date invalide, un devoir ne peut pas être du avant la rentrée', 'error')
+            return redirect(url_for('upload_error'))
+        if not is_before:
+            flash("Date invalide, ça m'étonnerait que ce site soit là dans plus d'un an", 'error')
+            return redirect(url_for('upload_error'))
+
+        teacher = form.teacher.data
+        if teacher not in teachers_list:
+            if teacher == "Choisir une matière d'abord":
+                flash('Veuillez choisir un vrai professeur après avoir choisi une matière', 'error')
+            else:
+                flash('Professeur invalide.', 'error')
+            return redirect(url_for('upload_error'))
+
+        subject = form.subject.data
+        if subject not in matieres_list:
+            flash('Matière invalide.', 'error')
+            return redirect(url_for('upload_error'))
+
+        class_id = form.classe.data
+        if not class_id == "1 T-B":
+            flash('Classe Invalide.', 'error')
+            return redirect(url_for('upload_error'))
+
+        # create a new homework object and add it to the database
         if not current_user:
-            homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
-                                subject=subject, class_id=class_id)
-        else:
-            homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
-                                subject=subject, class_id=class_id, user_id=current_user.username)
+            flash("Comment t'es arrivé là sans te connecter ?? ", 'error')
+            return redirect(url_for('upload_error'))
+        due_date = due_date.strftime("%Y-%m-%d")
+        print(due_date)
+
+        homework = Homework(title=title, content=content, due_date=due_date, teacher=teacher,
+                            subject=subject, class_id=class_id, user_id=current_user.username)
         db.session.add(homework)
         db.session.commit()
-        session.pop('_flashes', None)
+
         flash('Devoir envoyé correctement.', 'success')
         return redirect(url_for('homeworks'))
     else:
-        return render_template('upload_hw.html', form=form)
-
+        return render_template('upload_hw.html', form=form, matieres=matieres)
 
 
 @app.route('/envoyer_reponse/<int:homework_id>', methods=['GET', 'POST'])
@@ -179,18 +235,34 @@ def upload_answer(homework_id):
     homework = Homework.query.filter_by(id=homework_id).first()
     if not homework:
         flash(
-            "L'identifiant de devoir est invalide, veuillez ne pas toucher à l'identifiant de l'url la prochaine fois.")
+            "L'identifiant de devoir est invalide, veuillez ne pas toucher à l'identifiant de l'url.")
         return redirect(url_for('home'))
-    if not current_user.status == "admin":
-        abort(403)
+    # if not current_user.status == "admin":
+    #     abort(403)
     form = UploadAnswerForm()
     if request.method == 'POST':
         title = request.form['title']
+        # check if there is already an answer with the same title for this homework
+        existing_answer = Answer.query.filter_by(homework_id=homework_id, title=title).first()
+        if existing_answer:
+            session.pop('_flashes', None)
+            flash('Une réponse avec le même titre existe déjà pour ce devoir', 'error')
+            return redirect(url_for('upload_error'))
+
         content = request.form['content']
         if len(content)> 10000:
             flash('Le contenu en doit pas faire plus de 10000 caractères.', 'error')
             return redirect(url_for('upload_error'))
-        due_date = homework.due_date
+        due_date = str(homework.due_date)
+        year, month, day = due_date.split('-')
+
+        # Convert the components to integers if needed
+        year = int(year)
+        month = int(month)
+        day = int(day)
+
+        due_date = datetime(year, month, day)
+        due_date = due_date.strftime("%Y-%m-%d")
         file = request.files.get('file')
         if file:
             filename = secure_filename(file.filename)
@@ -211,13 +283,9 @@ def upload_answer(homework_id):
             filename = None
             file_data = None
 
-        # check if there is already an answer with the same title for this homework
-        existing_answer = Answer.query.filter_by(homework_id=homework_id, title=title).first()
-        if existing_answer:
-            session.pop('_flashes', None)
-            flash('Une réponse avec le même titre existe déjà pour ce devoir', 'error')
+        if not current_user:
+            flash("Comment t'es arrivé là sans te connecter ?? ", 'error')
             return redirect(url_for('upload_error'))
-
         # create a new answer object
         answer = Answer(homework_id=homework_id, title=title, content=content, user_id=current_user.username,
                         due_date=due_date,
@@ -245,13 +313,23 @@ def register():
         return redirect(url_for('home'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.name.data, email=form.email.data)
+        user = User(username=form.name.data, email=str(form.email.data).lower())
         user.set_password(form.password.data)
+        existing_user = User.query.filter_by(email=str(form.email.data).lower()).first()
+        if existing_user:
+            flash('Un utilisateur avec la même adresse mail existe déja.', 'error')
+            return redirect(url_for('register'))
         db.session.add(user)
         db.session.commit()
         session.pop('_flashes', None)
         flash('Vous avez bien été enregistré!')
-        return redirect(url_for('login'))
+        user = User.query.filter_by(email=str(form.email.data).lower()).first()
+        if user is None or not user.check_password(form.password.data):
+            session.pop('_flashes', None)
+            flash("Erreur, tu n'existe pas dans la base de donnée, comment c'est possible ?")
+            return redirect(url_for('register'))
+        login_user(user)
+        return redirect(url_for('profile'))
     return render_template('register.html', form=form)
 
 
@@ -261,7 +339,7 @@ def login():
         return redirect(url_for('home'))
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email_or_username.data).first()
+        user = User.query.filter_by(email=str(form.email_or_username.data).lower()).first()
         if user is None or not user.check_password(form.password.data):
             session.pop('_flashes', None)
             flash('Email ou mot de passe invalide.')
@@ -343,18 +421,18 @@ class UpdateProfileForm(FlaskForm):
     submit = SubmitField('Sauvegarder les changements.')
 
 
+
 class UploadHomeworkForm(FlaskForm):
-    classes = ["1 G-B"]
-    matieres = ["Français", "Histoire Géographie", "Sport", "ES Physique", "ES Maths", "ES Svt"]
-    profs = ["MARCHINI", "MALPELLI", "RIGAUX", "BRUNINI", "AVENOSO", "CASTELLO", "CHAPUIS",
-             "MURACCIOLES"]
+    classes = ["1 T-B"]
     title = StringField('Titre', validators=[DataRequired()])
     content = StringField('Contenu', validators=[DataRequired()])
     due_date = DateField('Date Limite', format='%d/%m/%Y')
-    teacher = SelectField('Professeur', choices=profs)
-    subject = SelectField('Matière', choices=matieres)
+    choix_matieres = [(matiere, matiere) for matiere in matieres.keys()]
+    subject = SelectField('Matière', choices=choix_matieres)
+    teacher = SelectField('Professeur', choices=["Choisir une matière d'abord"])
     classe = SelectField('Classe', choices=classes)
     submit = SubmitField('Envoyer')
+
 
 
 class UploadAnswerForm(FlaskForm):
@@ -370,5 +448,5 @@ if __name__ == "__main__":
         app.run()
     #else:
 
-        #with app.app_context():
-            #exec('change_user_status("lysandre@mail.com", "admin")')
+        # with app.app_context():
+        #     exec('change_user_status("feur@gmail.com", "admin")')
